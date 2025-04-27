@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send SOL via Phantom Wallet</title>
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+</head>
+<body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background-color:#f0f0f0;">
+  <h1>Send SOL</h1>
+  <input type="text" id="receiver" placeholder="Receiver Address" style="margin:10px;padding:8px;width:300px;">
+  <input type="number" id="amount" placeholder="Amount in SOL" style="margin:10px;padding:8px;width:300px;">
+  <button onclick="sendSol()" style="padding:10px 20px;font-size:16px;">Send</button>  
+  <script>
+    const { Connection, PublicKey, Transaction, SystemProgram } = solanaWeb3;
+
+    async function connectWallet() {
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          await window.solana.connect();
+          console.log("Connected to Phantom");
+        } catch (err) {
+          alert("Connection failed: " + err.message);
+        }
+      } else {
+        alert("Phantom Wallet not found!");
+      }
+    }
+
+    async function sendSol() {
+      await connectWallet();
+
+      const receiverAddress = document.getElementById('receiver').value.trim();
+      const amountInSOL = parseFloat(document.getElementById('amount').value);
+
+      if (!receiverAddress || isNaN(amountInSOL)) {
+        alert("Please enter valid receiver address and amount.");
+        return;
+      }
+
+      const connection = new Connection("https://api.devnet.solana.com"); // Use Devnet for testing
+      const sender = window.solana.publicKey;
+      const receiver = new PublicKey(receiverAddress);
+
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: sender,
+          toPubkey: receiver,
+          lamports: amountInSOL * solanaWeb3.LAMPORTS_PER_SOL
+        })
+      );
+
+      try {
+        const { signature } = await window.solana.signAndSendTransaction(transaction);
+        await connection.confirmTransaction(signature);
+        alert("Transaction successful: " + signature);
+      } catch (err) {
+        alert("Transaction failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
